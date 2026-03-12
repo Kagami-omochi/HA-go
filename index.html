@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HA-go</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; background-color: #f4f4f9; }
+        textarea { width: 100%; height: 150px; margin-bottom: 1rem; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; }
+        button { background-color: #ff4757; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; }
+        button:disabled { background-color: #ccc; }
+        #output { background: white; padding: 1rem; border-radius: 4px; border: 1px solid #ddd; min-height: 50px; white-space: pre-wrap; margin-top: 1rem; font-size: 1.2rem; color: #333; }
+        .loading { color: #666; font-style: italic; }
+    </style>
+</head>
+<body>
+
+    <h2>HA-go</h2>
+    <p>入力した日本語をすべて「はひふへほ」に変換します。</p>
+
+    <textarea id="input" placeholder="ここに文章を入力してください... (例: こんにちは、元気ですか？)"></textarea>
+    <button id="convertBtn" disabled>辞書を読み込み中...</button>
+
+    <div id="output">変換結果がここに表示されます。</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/kuroshiro@1.1.2/dist/kuroshiro.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/kuroshiro-analyzer-kuromoji@1.1.0/dist/kuroshiro-analyzer-kuromoji.min.js"></script>
+
+    <script>
+        const kuroshiro = new Kuroshiro();
+        const analyzer = new KuromojiAnalyzer({
+            // CDN経由で辞書ファイルを指定
+            dictPath: "https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict"
+        });
+
+        const inputArea = document.getElementById('input');
+        const outputArea = document.getElementById('output');
+        const btn = document.getElementById('convertBtn');
+
+        // 初期化
+        async function init() {
+            try {
+                await kuroshiro.init(analyzer);
+                btn.innerText = "ハ行にする！";
+                btn.disabled = false;
+            } catch (err) {
+                outputArea.innerText = "エラー: 辞書の読み込みに失敗しました。";
+                console.error(err);
+            }
+        }
+
+        // ハ行へのマッピングロジック
+        function toHagyo(text) {
+            const map = {
+                'あ': 'は', 'か': 'は', 'さ': 'は', 'た': 'は', 'な': 'は', 'は': 'は', 'ま': 'は', 'や': 'は', 'ら': 'は', 'わ': 'は', 'が': 'は', 'ざ': 'は', 'だ': 'は', 'ば': 'は', 'ぱ': 'は', 'ぁ': 'は', 'ゃ': 'は',
+                'い': 'ひ', 'き': 'ひ', 'し': 'ひ', 'ち': 'ひ', 'に': 'ひ', 'ひ': 'ひ', 'み': 'ひ', 'り': 'ひ', 'ぎ': 'ひ', 'じ': 'ひ', 'ぢ': 'ひ', 'び': 'ひ', 'ぴ': 'ひ', 'ぃ': 'ひ',
+                'う': 'ふ', 'く': 'ふ', 'す': 'ふ', 'つ': 'ふ', 'ぬ': 'ふ', 'ふ': 'ふ', 'む': 'ふ', 'ゆ': 'ふ', 'る': 'ふ', 'ぐ': 'ふ', 'ず': 'ふ', 'づ': 'ふ', 'ぶ': 'ふ', 'ぷ': 'ふ', 'ぅ': 'ふ', 'ゅ': 'ふ', 'っ': 'ふ',
+                'え': 'へ', 'け': 'へ', 'せ': 'へ', 'て': 'へ', 'ね': 'へ', 'へ': 'へ', 'め': 'へ', 'れ': 'へ', 'げ': 'へ', 'ぜ': 'へ', 'で': 'へ', 'べ': 'へ', 'ぺ': 'へ', 'ぇ': 'へ',
+                'お': 'ほ', 'こ': 'ほ', 'そ': 'ほ', 'と': 'ほ', 'の': 'ほ', 'ほ': 'ほ', 'も': 'ほ', 'よ': 'ほ', 'ろ': 'ほ', 'を': 'ほ', 'ご': 'ほ', 'ぞ': 'ほ', 'ど': 'ほ', 'ぼ': 'ほ', 'ぽ': 'ほ', 'ぉ': 'ほ', 'ょ': 'ほ',
+                'ん': 'ん'
+            };
+
+            return text.split('').map(char => map[char] || char).join('');
+        }
+
+        btn.addEventListener('click', async () => {
+            const rawText = inputArea.value;
+            if (!rawText) return;
+
+            btn.disabled = true;
+            btn.innerText = "変換中...";
+
+            // 1. Kuroshiroでひらがなに変換
+            const hiragana = await kuroshiro.convert(rawText, { to: "hiragana" });
+            
+            // 2. ひらがなをハ行に置換
+            const result = toHagyo(hiragana);
+
+            outputArea.innerText = result;
+            btn.disabled = false;
+            btn.innerText = "ハ行にする！";
+        });
+
+        init();
+    </script>
+</body>
+</html>
